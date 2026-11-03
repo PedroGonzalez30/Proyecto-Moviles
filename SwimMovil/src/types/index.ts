@@ -20,7 +20,7 @@ export type Rutina = {
 export type Sesion = {
   id: string;
   fecha: string;
-  metros: number;
   duracionMin: number;
+  series: Serie[];
   rutinaId?: string;
 };
