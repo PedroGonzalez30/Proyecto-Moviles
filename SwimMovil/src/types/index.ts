@@ -24,3 +24,16 @@ export type Sesion = {
   series: Serie[];
   rutinaId?: string;
 };
+
+export type Usuario = {
+  id: string;
+  nombre: string;
+  correo: string;
+  contrasena: string;
+};
+
+export type Perfil = {
+  objetivo: Objetivo;
+  diasPorSemana: number;
+  duracionSesionMin: number;
+};

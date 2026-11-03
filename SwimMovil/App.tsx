@@ -7,6 +7,9 @@ import Rutinas from './src/pages/Rutinas';
 import RutinaDetalle from './src/pages/RutinaDetalle';
 import RegistroSesion from './src/pages/RegistroSesion';
 import Historial from './src/pages/Historial';
+import Perfil from './src/pages/Perfil';
+import Registro from './src/pages/Registro';
+import Login from './src/pages/Login';
 import { RootStackParamList } from './src/types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -26,6 +29,9 @@ export default function App() {
           <Stack.Screen name="RutinaDetalle" component={RutinaDetalle} options={{ title: 'Detalle' }} />
           <Stack.Screen name="RegistroSesion" component={RegistroSesion} options={{ title: 'Registrar sesión' }} />
           <Stack.Screen name="Historial" component={Historial} />
+          <Stack.Screen name="Perfil" component={Perfil} />
+          <Stack.Screen name="Registro" component={Registro} options={{ title: 'Crear cuenta' }} />
+          <Stack.Screen name="Login" component={Login} options={{ title: 'Iniciar sesión' }} />
         </Stack.Navigator>
       </NavigationContainer>
       <StatusBar style="light" />

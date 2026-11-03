@@ -1,36 +1,43 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { useCallback, useState } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { haySesionActiva } from '../storage/usuario';
 import { RootStackParamList } from '../types/navigation';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { leerEjerciciosReloj, convertirARegistroSesion } from '../data/healhConnct';
-import { guardarSesion } from '../storage/sesiones';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function Home({ navigation }: Props) {
-  const probarReloj = async () => {
-    try {
-      const registros = await leerEjerciciosReloj();
+  const insets = useSafeAreaInsets();
+  const [logueado, setLogueado] = useState(false);
 
-      if (registros.length === 0) {
-        Alert.alert('Sin datos', 'No se encontraron sesiones de ejercicio en Health Connect.');
-        return;
-      }
-
-      for (const registro of registros) {
-        const sesion = convertirARegistroSesion(registro);
-        await guardarSesion(sesion);
-      }
-
-      Alert.alert('Listo', `Se importaron ${registros.length} sesión(es) del reloj.`);
-      navigation.navigate('Historial');
-    } catch (e) {
-      Alert.alert('Error', String(e));
-    }
-  };
+  useFocusEffect(
+    useCallback(() => {
+      haySesionActiva().then(setLogueado);
+    }, [])
+  );
 
   return (
     <SafeAreaView style={styles.container}>
+      {logueado ? (
+        <TouchableOpacity
+          style={[styles.botonPerfil, { top: insets.top + 8 }]}
+          onPress={() => navigation.navigate('Perfil')}
+        >
+          <Text style={styles.botonPerfilIcono}>👤</Text>
+        </TouchableOpacity>
+      ) : (
+        <View style={[styles.barraCuenta, { top: insets.top + 8 }]}>
+          <TouchableOpacity style={styles.botonCuenta} onPress={() => navigation.navigate('Login')}>
+            <Text style={styles.botonCuentaTexto}>Iniciar sesión</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.botonCuenta} onPress={() => navigation.navigate('Registro')}>
+            <Text style={styles.botonCuentaTexto}>Registrarse</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <Text style={styles.titulo}>SwimApp</Text>
       <Text style={styles.subtitulo}>Entrena tu natación</Text>
 
@@ -46,9 +53,6 @@ export default function Home({ navigation }: Props) {
         <Text style={styles.botonSecundarioTexto}>Ver historial</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.botonSecundario} onPress={probarReloj}>
-        <Text style={styles.botonSecundarioTexto}>Importar del reloj</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -58,8 +62,39 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#0A2540',
     padding: 24,
+    backgroundColor: '#0A2540',
+  },
+  botonPerfil: {
+    position: 'absolute',
+    right: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#123A63',
+  },
+  botonPerfilIcono: {
+    fontSize: 22,
+  },
+  barraCuenta: {
+    position: 'absolute',
+    right: 16,
+    flexDirection: 'row',
+  },
+  botonCuenta: {
+    marginLeft: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#7FDBFF',
+  },
+  botonCuentaTexto: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#7FDBFF',
   },
   titulo: {
     fontSize: 48,

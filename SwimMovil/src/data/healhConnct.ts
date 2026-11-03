@@ -1,4 +1,4 @@
-import { initialize, requestPermission, readRecords } from 'react-native-health-connect';
+import { initialize, requestPermission, readRecords,getGrantedPermissions,openHealthConnectSettings } from 'react-native-health-connect';
 import { Sesion } from '../types';
 
 export async function leerEjerciciosReloj() {
@@ -31,4 +31,15 @@ export function convertirARegistroSesion(registro: any): Sesion {
     duracionMin,
     series: [],
   };
+}
+
+export async function relojVinculado(): Promise<boolean> {
+  const listo = await initialize();
+  if (!listo) return false;
+  const permisos = await getGrantedPermissions();
+  return permisos.some((p: any) => p.recordType === 'ExerciseSession');
+}
+
+export function abrirAjustesHealthConnect() {
+  openHealthConnectSettings();
 }
