@@ -1,4 +1,5 @@
 import { initialize, requestPermission, readRecords } from 'react-native-health-connect';
+import { Sesion } from '../types';
 
 export async function leerEjerciciosReloj() {
   const listo = await initialize();
@@ -17,4 +18,17 @@ export async function leerEjerciciosReloj() {
     },
   });
   return resultado.records;
+}
+
+export function convertirARegistroSesion(registro: any): Sesion {
+  const inicio = new Date(registro.startTime);
+  const fin = new Date(registro.endTime);
+  const duracionMin = Math.round((fin.getTime() - inicio.getTime()) / 60000);
+
+  return {
+    id: registro.metadata.id,
+    fecha: registro.startTime,
+    duracionMin,
+    series: [],
+  };
 }

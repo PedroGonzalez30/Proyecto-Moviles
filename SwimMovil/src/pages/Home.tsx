@@ -2,12 +2,33 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { RootStackParamList } from '../types/navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { leerEjerciciosReloj } from '../data/healhConnct';
-
+import { leerEjerciciosReloj, convertirARegistroSesion } from '../data/healhConnct';
+import { guardarSesion } from '../storage/sesiones';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function Home({ navigation }: Props) {
+  const probarReloj = async () => {
+    try {
+      const registros = await leerEjerciciosReloj();
+
+      if (registros.length === 0) {
+        Alert.alert('Sin datos', 'No se encontraron sesiones de ejercicio en Health Connect.');
+        return;
+      }
+
+      for (const registro of registros) {
+        const sesion = convertirARegistroSesion(registro);
+        await guardarSesion(sesion);
+      }
+
+      Alert.alert('Listo', `Se importaron ${registros.length} sesión(es) del reloj.`);
+      navigation.navigate('Historial');
+    } catch (e) {
+      Alert.alert('Error', String(e));
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.titulo}>SwimApp</Text>
@@ -25,20 +46,9 @@ export default function Home({ navigation }: Props) {
         <Text style={styles.botonSecundarioTexto}>Ver historial</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.botonSecundario}
-        onPress={async () => {
-          try {
-            const datos = await leerEjerciciosReloj();
-            Alert.alert('Sesiones', JSON.stringify(datos).slice(0, 600));
-          } catch (e) {
-            Alert.alert('Error', String(e));
-          }
-        }}
-      >
-        <Text style={styles.botonSecundarioTexto}>Probar reloj</Text>
+      <TouchableOpacity style={styles.botonSecundario} onPress={probarReloj}>
+        <Text style={styles.botonSecundarioTexto}>Importar del reloj</Text>
       </TouchableOpacity>
-
     </SafeAreaView>
   );
 }
