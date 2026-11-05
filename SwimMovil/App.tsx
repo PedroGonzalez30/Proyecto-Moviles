@@ -11,6 +11,7 @@ import Perfil from './src/pages/Perfil';
 import Registro from './src/pages/Registro';
 import Login from './src/pages/Login';
 import { RootStackParamList } from './src/types/navigation';
+import Encabezado from './src/components/Encabezado';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -19,19 +20,15 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <Stack.Navigator
-          screenOptions={{
-            headerStyle: { backgroundColor: '#0A2540' },
-            headerTintColor: '#FFFFFF',
-          }}
-        >
-          <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
+          screenOptions={{ header: () => <Encabezado />, }}>
+          <Stack.Screen name="Home" component={Home} />
           <Stack.Screen name="Rutinas" component={Rutinas} />
-          <Stack.Screen name="RutinaDetalle" component={RutinaDetalle} options={{ title: 'Detalle' }} />
-          <Stack.Screen name="RegistroSesion" component={RegistroSesion} options={{ title: 'Registrar sesión' }} />
+          <Stack.Screen name="RutinaDetalle" component={RutinaDetalle} />
+          <Stack.Screen name="RegistroSesion" component={RegistroSesion} />
           <Stack.Screen name="Historial" component={Historial} />
           <Stack.Screen name="Perfil" component={Perfil} />
-          <Stack.Screen name="Registro" component={Registro} options={{ title: 'Crear cuenta' }} />
-          <Stack.Screen name="Login" component={Login} options={{ title: 'Iniciar sesión' }} />
+          <Stack.Screen name="Registro" component={Registro} />
+          <Stack.Screen name="Login" component={Login} />
         </Stack.Navigator>
       </NavigationContainer>
       <StatusBar style="light" />

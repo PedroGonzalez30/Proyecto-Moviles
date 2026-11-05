@@ -1,0 +1,115 @@
+[
+    {
+        "id": "V1",
+        "nombre": "Rutina Velocidad",
+        "objetivo": "velocidad",
+        "distanciaTotal": 1200,
+        "piscinaMetros": 25,
+        "calentamiento": [
+            {
+                "repeticiones": 1,
+                "distancia": 300,
+                "estilo": "combinado",
+                "intensidad": "suave"
+            }
+        ],
+        "principal": [
+            {
+                "repeticiones": 8,
+                "distancia": 25,
+                "estilo": "crol",
+                "intensidad": "100%",
+                "descansoSeg": 60
+            },
+            {
+                "repeticiones": 1,
+                "distancia": 100,
+                "estilo": "crol",
+                "intensidad": "muy suave"
+            },
+            {
+                "repeticiones": 4,
+                "distancia": 50,
+                "estilo": "crol",
+                "intensidad": "95%",
+                "descansoSeg": 75
+            }
+        ],
+        "vueltaCalma": [
+            {
+                "repeticiones": 1,
+                "distancia": 100,
+                "estilo": "crol",
+                "descripcion": "Libre, respiración bilateral"
+            }
+        ]
+    },
+    {
+        "id": "M2",
+        "nombre": "Rutina de Mediofondo",
+        "objetivo": "mediofondo",
+        "distanciaTotal": 1800,
+        "piscinaMetros": 25,
+        "calentamiento": [
+            {
+                "repeticiones": 1,
+                "distancia": 400,
+                "estilo": "crol",
+                "intensidad": "suave"
+            }
+        ],
+        "principal": [
+            {
+                "repeticiones": 5,
+                "distancia": 200,
+                "estilo": "crol",
+                "descansoSeg": 30
+            },
+            {
+                "repeticiones": 4,
+                "distancia": 100,
+                "estilo": "combinado",
+                "descansoSeg": 20
+            }
+        ],
+        "vueltaCalma": [
+            {
+                "repeticiones": 1,
+                "distancia": 200,
+                "estilo": "crol",
+                "intensidad": "muy suave"
+            }
+        ]
+    },
+    {
+        "id": "F3",
+        "nombre": "Rutina de Fondo",
+        "objetivo": "fondo",
+        "distanciaTotal": 2500,
+        "piscinaMetros": 25,
+        "calentamiento": [
+            {
+                "repeticiones": 1,
+                "distancia": 400,
+                "estilo": "crol",
+                "intensidad": "suave"
+            }
+        ],
+        "principal": [
+            {
+                "repeticiones": 1,
+                "distancia": 1500,
+                "estilo": "crol",
+                "intensidad": "constante"
+            }
+        ],
+        "vueltaCalma": [
+            {
+                "repeticiones": 4,
+                "distancia": 100,
+                "estilo": "dorso",
+                "descansoSeg": 15
+            }
+        ]
+    }
+]

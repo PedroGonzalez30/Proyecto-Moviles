@@ -2,50 +2,71 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { guardarPerfil, obtenerPerfil } from '../storage/perfil';
-import { cerrarSesion, haySesionActiva, obtenerUsuario } from '../storage/usuario';
-import { Objetivo, Usuario } from '../types';
-import { RootStackParamList } from '../types/navigation';
 import { convertirARegistroSesion, leerEjerciciosReloj, relojVinculado } from '../data/healhConnct';
+import { guardarPerfil, obtenerPerfil } from '../storage/perfil';
 import { guardarSesion } from '../storage/sesiones';
+import { cerrarSesion, haySesionActiva, obtenerUsuario } from '../storage/usuario';
+import { Equipo, Estilo, Objetivo, Usuario } from '../types';
+import { RootStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Perfil'>;
 
 const OBJETIVOS: Objetivo[] = ['velocidad', 'mediofondo', 'fondo'];
+const ESTILOS: Estilo[] = ['crol', 'dorso', 'pecho', 'mariposa'];
+const EQUIPOS: Equipo[] = ['aletas', 'paletas', 'pullbuoy', 'tabla', 'snorkel'];
 
 export default function Perfil({ navigation }: Props) {
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const [objetivo, setObjetivo] = useState<Objetivo>('velocidad');
-  const [dias, setDias] = useState('3');
-  const [duracion, setDuracion] = useState('60');
-  const [relojOk, setRelojOk] = useState(false);
+    const [usuario, setUsuario] = useState<Usuario | null>(null);
+    const [objetivo, setObjetivo] = useState<Objetivo>('velocidad');
+    const [dias, setDias] = useState('3');
+    const [duracion, setDuracion] = useState('60');
+    const [metros, setMetros] = useState('1000');
+    const [estilos, setEstilos] = useState<Estilo[]>(['crol']);
+    const [equipo, setEquipo] = useState<Equipo[]>([]);
+    const [relojOk, setRelojOk] = useState(false);
 
-  useEffect(() => {
-    const cargar = async () => {
-      if (await haySesionActiva()) setUsuario(await obtenerUsuario());
-      const perfil = await obtenerPerfil();
-      if (perfil) {
-        setObjetivo(perfil.objetivo);
-        setDias(String(perfil.diasPorSemana));
-        setDuracion(String(perfil.duracionSesionMin));
-        setRelojOk(await relojVinculado());
-      }
+    useEffect(() => {
+        const cargar = async () => {
+            if (await haySesionActiva()) setUsuario(await obtenerUsuario());
+            const perfil = await obtenerPerfil();
+            if (perfil) {
+                setObjetivo(perfil.objetivo);
+                setDias(String(perfil.diasPorSemana));
+                setDuracion(String(perfil.duracionSesionMin));
+                setMetros(String(perfil.metrosPorSesion ?? 1000));
+                setEstilos(perfil.estilos ?? ['crol']);
+                setEquipo(perfil.equipo ?? []);
+                setRelojOk(await relojVinculado());
+            }
+        };
+        cargar();
+    }, []);
+
+    const alternar = <T,>(lista: T[], valor: T, set: (l: T[]) => void) =>
+        set(lista.includes(valor) ? lista.filter((x) => x !== valor) : [...lista, valor]);
+
+    const handleGuardar = async () => {
+        const d = Number(dias);
+        const m = Number(duracion);
+        const mt = Number(metros);
+        if (!(d >= 1 && d <= 7) || !(m > 0) || !(mt > 0) || estilos.length < 1) {
+            Alert.alert('Datos inválidos', 'Días 1-7, duración y metros mayores a 0, y al menos un estilo.');
+            return;
+        }
+        await guardarPerfil({
+            objetivo,
+            diasPorSemana: d,
+            duracionSesionMin: m,
+            metrosPorSesion: mt,
+            estilos,
+            equipo,
+        });
+        Alert.alert('Listo', 'Perfil guardado.', [
+            { text: 'OK', onPress: () => navigation.popToTop() },
+        ]);
     };
-    cargar();
-  }, []);
 
-  const handleGuardar = async () => {
-    const d = Number(dias);
-    const m = Number(duracion);
-    if (!(d >= 1 && d <= 7) || !(m > 0)) {
-      Alert.alert('Datos inválidos', 'Días entre 1 y 7, y una duración mayor a 0.');
-      return;
-    }
-    await guardarPerfil({ objetivo, diasPorSemana: d, duracionSesionMin: m });
-    Alert.alert('Listo', 'Perfil guardado.', [
-        { text: 'OK', onPress: () => navigation.popToTop() },]);
-  };
-  const handleVincular = async () => {
+    const handleVincular = async () => {
         try {
             const registros = await leerEjerciciosReloj();
             setRelojOk(await relojVinculado());
@@ -56,143 +77,172 @@ export default function Perfil({ navigation }: Props) {
         }
     };
 
-  const handleCerrarSesion = async () => {
-    await cerrarSesion();
-    navigation.popToTop();
-  };
+    const handleCerrarSesion = async () => {
+        await cerrarSesion();
+        navigation.popToTop();
+    };
 
-  if (!usuario) {
+    if (!usuario) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <Text style={styles.titulo}>Tu cuenta</Text>
+                <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('Login')}>
+                    <Text style={styles.botonTexto}>Iniciar sesión</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.botonSecundario} onPress={() => navigation.navigate('Registro')}>
+                    <Text style={styles.botonSecundarioTexto}>Registrarse</Text>
+                </TouchableOpacity>
+            </SafeAreaView>
+        );
+    }
+
     return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.titulo}>Tu cuenta</Text>
-        <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.botonTexto}>Iniciar sesión</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.botonSecundario} onPress={() => navigation.navigate('Registro')}>
-          <Text style={styles.botonSecundarioTexto}>Registrarse</Text>
-        </TouchableOpacity>
-      </SafeAreaView>
+        <SafeAreaView style={styles.container}>
+            <ScrollView>
+                <Text style={styles.titulo}>Hola, {usuario.nombre}</Text>
+
+                <Text style={styles.etiqueta}>Objetivo</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {OBJETIVOS.map((o) => (
+                        <TouchableOpacity
+                            key={o}
+                            style={[styles.chip, objetivo === o && styles.chipActivo]}
+                            onPress={() => setObjetivo(o)}
+                        >
+                            <Text style={[styles.chipTexto, objetivo === o && styles.chipTextoActivo]}>{o}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+
+                <Text style={styles.etiqueta}>Días por semana</Text>
+                <TextInput style={styles.input} value={dias} onChangeText={setDias} keyboardType="numeric" />
+
+                <Text style={styles.etiqueta}>Duración de la sesión (min)</Text>
+                <TextInput style={styles.input} value={duracion} onChangeText={setDuracion} keyboardType="numeric" />
+
+                <Text style={styles.etiqueta}>Metros totales por sesión</Text>
+                <TextInput style={styles.input} value={metros} onChangeText={setMetros} keyboardType="numeric" />
+
+                <Text style={styles.etiqueta}>Estilos que nadas</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {ESTILOS.map((e) => (
+                        <TouchableOpacity
+                            key={e}
+                            style={[styles.chip, estilos.includes(e) && styles.chipActivo]}
+                            onPress={() => alternar(estilos, e, setEstilos)}
+                        >
+                            <Text style={[styles.chipTexto, estilos.includes(e) && styles.chipTextoActivo]}>{e}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+
+                <Text style={styles.etiqueta}>Equipo disponible</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {EQUIPOS.map((e) => (
+                        <TouchableOpacity
+                            key={e}
+                            style={[styles.chip, equipo.includes(e) && styles.chipActivo]}
+                            onPress={() => alternar(equipo, e, setEquipo)}
+                        >
+                            <Text style={[styles.chipTexto, equipo.includes(e) && styles.chipTextoActivo]}>{e}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+
+                <Text style={styles.etiqueta}>Reloj</Text>
+                <Text style={styles.estadoReloj}>
+                    {relojOk ? 'Conectado a Health Connect' : 'No conectado'}
+                </Text>
+                <TouchableOpacity style={styles.botonSecundario} onPress={handleVincular}>
+                    <Text style={styles.botonSecundarioTexto}>
+                        {relojOk ? 'Sincronizar ahora' : 'Vincular reloj'}
+                    </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.boton} onPress={handleGuardar}>
+                    <Text style={styles.botonTexto}>Guardar perfil</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.botonSecundario} onPress={handleCerrarSesion}>
+                    <Text style={styles.botonSecundarioTexto}>Cerrar sesión</Text>
+                </TouchableOpacity>
+            </ScrollView>
+        </SafeAreaView>
     );
-  }
-
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <Text style={styles.titulo}>Hola, {usuario.nombre}</Text>
-
-        <Text style={styles.etiqueta}>Objetivo</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {OBJETIVOS.map((o) => (
-            <TouchableOpacity
-              key={o}
-              style={[styles.chip, objetivo === o && styles.chipActivo]}
-              onPress={() => setObjetivo(o)}
-            >
-              <Text style={[styles.chipTexto, objetivo === o && styles.chipTextoActivo]}>{o}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <Text style={styles.etiqueta}>Días por semana</Text>
-        <TextInput style={styles.input} value={dias} onChangeText={setDias} keyboardType="numeric" />
-
-        <Text style={styles.etiqueta}>Duración de la sesión (min)</Text>
-        <TextInput style={styles.input} value={duracion} onChangeText={setDuracion} keyboardType="numeric" />
-
-        <Text style={styles.etiqueta}>Reloj</Text>
-        <Text style={styles.estadoReloj}>
-            {relojOk ? 'Conectado a Health Connect' : 'No conectado'}
-        </Text>
-        <TouchableOpacity style={styles.botonSecundario} onPress={handleVincular}>
-            <Text style={styles.botonSecundarioTexto}>
-                {relojOk ? 'Sincronizar ahora' : 'Vincular reloj'}
-            </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.boton} onPress={handleGuardar}>
-          <Text style={styles.botonTexto}>Guardar perfil</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.botonSecundario} onPress={handleCerrarSesion}>
-          <Text style={styles.botonSecundarioTexto}>Cerrar sesión</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
-  );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-    backgroundColor: '#0A2540',
-  },
-  titulo: {
-    marginBottom: 24,
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-  etiqueta: {
-    marginTop: 16,
-    marginBottom: 8,
-    fontSize: 14,
-    color: '#7FDBFF',
-  },
-  input: {
-    padding: 14,
-    borderRadius: 12,
-    backgroundColor: '#123A63',
-    fontSize: 16,
-    color: '#FFFFFF',
-  },
-  chip: {
-    marginRight: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#7FDBFF',
-  },
-  chipActivo: {
-    backgroundColor: '#7FDBFF',
-  },
-  chipTexto: {
-    fontSize: 14,
-    color: '#7FDBFF',
-  },
-  chipTextoActivo: {
-    fontWeight: 'bold',
-    color: '#0A2540',
-  },
-  boton: {
-    marginTop: 24,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderRadius: 999,
-    backgroundColor: '#7FDBFF',
-  },
-  botonTexto: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0A2540',
-  },
-  botonSecundario: {
-    marginTop: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#7FDBFF',
-  },
-  botonSecundarioTexto: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#7FDBFF',
-  },
+    container: {
+        flex: 1,
+        padding: 24,
+        backgroundColor: '#0A2540',
+    },
+    titulo: {
+        marginBottom: 24,
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+    },
+    etiqueta: {
+        marginTop: 16,
+        marginBottom: 8,
+        fontSize: 14,
+        color: '#7FDBFF',
+    },
+    input: {
+        padding: 14,
+        borderRadius: 12,
+        backgroundColor: '#123A63',
+        fontSize: 16,
+        color: '#FFFFFF',
+    },
+    chip: {
+        marginRight: 8,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: '#7FDBFF',
+    },
+    chipActivo: {
+        backgroundColor: '#7FDBFF',
+    },
+    chipTexto: {
+        fontSize: 14,
+        color: '#7FDBFF',
+    },
+    chipTextoActivo: {
+        fontWeight: 'bold',
+        color: '#0A2540',
+    },
+    boton: {
+        marginTop: 24,
+        paddingVertical: 14,
+        alignItems: 'center',
+        borderRadius: 999,
+        backgroundColor: '#7FDBFF',
+    },
+    botonTexto: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#0A2540',
+    },
+    botonSecundario: {
+        marginTop: 12,
+        paddingVertical: 14,
+        alignItems: 'center',
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: '#7FDBFF',
+    },
+    botonSecundarioTexto: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#7FDBFF',
+    },
     estadoReloj: {
-    marginBottom: 4,
-    fontSize: 16,
-    color: '#FFFFFF',
+        marginBottom: 4,
+        fontSize: 16,
+        color: '#FFFFFF',
     },
 });
