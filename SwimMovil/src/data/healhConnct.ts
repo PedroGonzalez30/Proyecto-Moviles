@@ -30,6 +30,7 @@ export function convertirARegistroSesion(registro: any): Sesion {
         fecha: registro.startTime,
         duracionMin,
         series: [],
+        origen: 'reloj',
     };
 }
 

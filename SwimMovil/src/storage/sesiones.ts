@@ -15,7 +15,11 @@ export async function guardarSesion(sesion: Sesion): Promise<void> {
 
 export async function obtenerSesiones(): Promise<Sesion[]> {
     const datos = await AsyncStorage.getItem(CLAVE_SESIONES);
-    return datos ? JSON.parse(datos) : [];
+    const lista: Sesion[] = datos ? JSON.parse(datos) : [];
+    return lista.map((s) => ({
+        ...s,
+        origen: s.origen ?? (/^\d+$/.test(s.id) ? 'manual' : 'reloj'),
+    }));
 }
 
 export async function borrarSesion(id: string): Promise<void> {
@@ -35,3 +39,10 @@ async function obtenerBorradas(): Promise<string[]> {
     return datos ? JSON.parse(datos) : [];
 }
 
+export async function vincularRutina(sesionId: string, rutinaId: string): Promise<void> {
+    const sesiones = await obtenerSesiones();
+    const actualizadas = sesiones.map((s) =>
+        s.id === sesionId ? { ...s, rutinaId } : s
+    );
+    await AsyncStorage.setItem(CLAVE_SESIONES, JSON.stringify(actualizadas));
+}

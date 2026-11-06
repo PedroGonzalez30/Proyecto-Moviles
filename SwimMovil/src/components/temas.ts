@@ -7,6 +7,8 @@ export const colores = {
     texto: '#0A2540',
     textoSecundario: '#5B6B7C',
     borde: '#010202',
+    error: '#D32F2F',
+    negro: '#000000',
 };
 
 export const Esquinas = { tarjeta: 16, pildora: 999 };

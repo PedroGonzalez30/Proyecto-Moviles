@@ -4,6 +4,7 @@ import { Alert, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { registrarUsuario } from '../storage/usuario';
 import { RootStackParamList } from '../types/navigation';
+import { colores } from '../components/temas';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Registro'>;
 
@@ -50,32 +51,32 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         padding: 24,
-        backgroundColor: '#0A2540',
+        backgroundColor: colores.fondo,
     },
     titulo: {
         marginBottom: 24,
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#FFFFFF',
+        color: colores.texto,
     },
     input: {
         marginBottom: 12,
         padding: 14,
         borderRadius: 12,
-        backgroundColor: '#123A63',
+        backgroundColor: colores.tarjeta,
         fontSize: 16,
-        color: '#FFFFFF',
+        color: colores.texto,
     },
     boton: {
         marginTop: 12,
         paddingVertical: 14,
         alignItems: 'center',
         borderRadius: 999,
-        backgroundColor: '#7FDBFF',
+        backgroundColor: colores.acento,
     },
     botonTexto: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#0A2540',
+        color: colores.texto,
     },
 });

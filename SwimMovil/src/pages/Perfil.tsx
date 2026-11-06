@@ -1,11 +1,13 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import { Alert, KeyboardAvoidingView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Chip from '../components/Chip';
 import { convertirARegistroSesion, leerEjerciciosReloj, relojVinculado } from '../data/healhConnct';
 import { guardarPerfil, obtenerPerfil } from '../storage/perfil';
 import { guardarSesion } from '../storage/sesiones';
 import { cerrarSesion, haySesionActiva, obtenerUsuario } from '../storage/usuario';
+import { Esquinas, colores, sombra } from '../components/temas';
 import { Equipo, Estilo, Objetivo, Usuario } from '../types';
 import { RootStackParamList } from '../types/navigation';
 
@@ -36,8 +38,8 @@ export default function Perfil({ navigation }: Props) {
                 setMetros(String(perfil.metrosPorSesion ?? 1000));
                 setEstilos(perfil.estilos ?? ['crol']);
                 setEquipo(perfil.equipo ?? []);
-                setRelojOk(await relojVinculado());
             }
+            setRelojOk(await relojVinculado());
         };
         cargar();
     }, []);
@@ -84,89 +86,74 @@ export default function Perfil({ navigation }: Props) {
 
     if (!usuario) {
         return (
-            <SafeAreaView style={styles.container}>
-                <Text style={styles.titulo}>Tu cuenta</Text>
-                <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('Login')}>
-                    <Text style={styles.botonTexto}>Iniciar sesión</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.botonSecundario} onPress={() => navigation.navigate('Registro')}>
-                    <Text style={styles.botonSecundarioTexto}>Registrarse</Text>
-                </TouchableOpacity>
+            <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+                <View style={styles.contenido}>
+                    <Text style={styles.titulo}>Tu cuenta</Text>
+                    <View style={styles.filaBotones}>
+                        <TouchableOpacity style={styles.boton} onPress={() => navigation.navigate('Login')}>
+                            <Text style={styles.botonTexto}>Iniciar sesión</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.botonSecundario} onPress={() => navigation.navigate('Registro')}>
+                            <Text style={styles.botonSecundarioTexto}>Registrarse</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
             </SafeAreaView>
         );
     }
 
     return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView>
-                <Text style={styles.titulo}>Hola, {usuario.nombre}</Text>
+        <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+            <KeyboardAvoidingView style={styles.container} behavior="padding">
+                <ScrollView contentContainerStyle={styles.contenido} keyboardShouldPersistTaps="handled">
+                    <Text style={styles.titulo}>Hola, {usuario.nombre}</Text>
 
-                <Text style={styles.etiqueta}>Objetivo</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {OBJETIVOS.map((o) => (
-                        <TouchableOpacity
-                            key={o}
-                            style={[styles.chip, objetivo === o && styles.chipActivo]}
-                            onPress={() => setObjetivo(o)}
-                        >
-                            <Text style={[styles.chipTexto, objetivo === o && styles.chipTextoActivo]}>{o}</Text>
+                    <View style={styles.panel}>
+                        <Text style={styles.etiqueta}>Objetivo</Text>
+                        <Chip opciones={OBJETIVOS} seleccionados={[objetivo]} onToggle={setObjetivo} />
+
+                        <View style={styles.filaCampos}>
+                            <View style={styles.campo}>
+                                <Text style={styles.etiqueta}>Días por semana</Text>
+                                <TextInput style={styles.input} value={dias} onChangeText={setDias} keyboardType="numeric" />
+                            </View>
+                            <View style={styles.campo}>
+                                <Text style={styles.etiqueta}>Duración (min)</Text>
+                                <TextInput style={styles.input} value={duracion} onChangeText={setDuracion} keyboardType="numeric" />
+                            </View>
+                        </View>
+
+                        <Text style={styles.etiqueta}>Metros totales por sesión</Text>
+                        <TextInput style={styles.input} value={metros} onChangeText={setMetros} keyboardType="numeric" />
+
+                        <Text style={styles.etiqueta}>Estilos que nadas</Text>
+                        <Chip opciones={ESTILOS} seleccionados={estilos} onToggle={(e) => alternar(estilos, e, setEstilos)} />
+
+                        <Text style={styles.etiqueta}>Equipo disponible</Text>
+                        <Chip opciones={EQUIPOS} seleccionados={equipo} onToggle={(e) => alternar(equipo, e, setEquipo)} />
+
+                        <TouchableOpacity style={styles.boton} onPress={handleGuardar}>
+                            <Text style={styles.botonTexto}>Guardar perfil</Text>
                         </TouchableOpacity>
-                    ))}
-                </ScrollView>
+                    </View>
 
-                <Text style={styles.etiqueta}>Días por semana</Text>
-                <TextInput style={styles.input} value={dias} onChangeText={setDias} keyboardType="numeric" />
-
-                <Text style={styles.etiqueta}>Duración de la sesión (min)</Text>
-                <TextInput style={styles.input} value={duracion} onChangeText={setDuracion} keyboardType="numeric" />
-
-                <Text style={styles.etiqueta}>Metros totales por sesión</Text>
-                <TextInput style={styles.input} value={metros} onChangeText={setMetros} keyboardType="numeric" />
-
-                <Text style={styles.etiqueta}>Estilos que nadas</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {ESTILOS.map((e) => (
-                        <TouchableOpacity
-                            key={e}
-                            style={[styles.chip, estilos.includes(e) && styles.chipActivo]}
-                            onPress={() => alternar(estilos, e, setEstilos)}
-                        >
-                            <Text style={[styles.chipTexto, estilos.includes(e) && styles.chipTextoActivo]}>{e}</Text>
+                    <View style={styles.panel}>
+                        <Text style={styles.subtitulo}>Reloj</Text>
+                        <Text style={styles.estadoReloj}>
+                            {relojOk ? 'Conectado a Health Connect' : 'No conectado'}
+                        </Text>
+                        <TouchableOpacity style={styles.botonSecundario} onPress={handleVincular}>
+                            <Text style={styles.botonSecundarioTexto}>
+                                {relojOk ? 'Sincronizar ahora' : 'Vincular reloj'}
+                            </Text>
                         </TouchableOpacity>
-                    ))}
+                    </View>
+
+                    <TouchableOpacity style={styles.botonSecundario} onPress={handleCerrarSesion}>
+                        <Text style={styles.botonSecundarioTexto}>Cerrar sesión</Text>
+                    </TouchableOpacity>
                 </ScrollView>
-
-                <Text style={styles.etiqueta}>Equipo disponible</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {EQUIPOS.map((e) => (
-                        <TouchableOpacity
-                            key={e}
-                            style={[styles.chip, equipo.includes(e) && styles.chipActivo]}
-                            onPress={() => alternar(equipo, e, setEquipo)}
-                        >
-                            <Text style={[styles.chipTexto, equipo.includes(e) && styles.chipTextoActivo]}>{e}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-
-                <Text style={styles.etiqueta}>Reloj</Text>
-                <Text style={styles.estadoReloj}>
-                    {relojOk ? 'Conectado a Health Connect' : 'No conectado'}
-                </Text>
-                <TouchableOpacity style={styles.botonSecundario} onPress={handleVincular}>
-                    <Text style={styles.botonSecundarioTexto}>
-                        {relojOk ? 'Sincronizar ahora' : 'Vincular reloj'}
-                    </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.boton} onPress={handleGuardar}>
-                    <Text style={styles.botonTexto}>Guardar perfil</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.botonSecundario} onPress={handleCerrarSesion}>
-                    <Text style={styles.botonSecundarioTexto}>Cerrar sesión</Text>
-                </TouchableOpacity>
-            </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -174,75 +161,85 @@ export default function Perfil({ navigation }: Props) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 24,
-        backgroundColor: '#0A2540',
+        backgroundColor: colores.fondo,
+    },
+    contenido: {
+        padding: 16,
     },
     titulo: {
-        marginBottom: 24,
-        fontSize: 28,
+        marginBottom: 16,
+        fontSize: 24,
         fontWeight: 'bold',
-        color: '#FFFFFF',
+        color: colores.texto,
+    },
+    subtitulo: {
+        marginBottom: 8,
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: colores.texto,
+    },
+    panel: {
+        ...sombra,
+        marginBottom: 16,
+        padding: 16,
+        borderRadius: Esquinas.tarjeta,
+        backgroundColor: colores.tarjeta,
     },
     etiqueta: {
-        marginTop: 16,
-        marginBottom: 8,
+        marginTop: 12,
+        marginBottom: 6,
         fontSize: 14,
-        color: '#7FDBFF',
+        color: colores.textoSecundario,
+    },
+    filaCampos: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    campo: {
+        flex: 1,
     },
     input: {
-        padding: 14,
-        borderRadius: 12,
-        backgroundColor: '#123A63',
-        fontSize: 16,
-        color: '#FFFFFF',
-    },
-    chip: {
-        marginRight: 8,
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 999,
+        padding: 10,
+        borderRadius: Esquinas.tarjeta,
         borderWidth: 1,
-        borderColor: '#7FDBFF',
+        borderColor: colores.borde,
+        backgroundColor: colores.tarjeta,
+        fontSize: 16,
+        color: colores.texto,
     },
-    chipActivo: {
-        backgroundColor: '#7FDBFF',
-    },
-    chipTexto: {
-        fontSize: 14,
-        color: '#7FDBFF',
-    },
-    chipTextoActivo: {
-        fontWeight: 'bold',
-        color: '#0A2540',
+    filaBotones: {
+        flexDirection: 'row',
+        gap: 8,
     },
     boton: {
-        marginTop: 24,
-        paddingVertical: 14,
-        alignItems: 'center',
-        borderRadius: 999,
-        backgroundColor: '#7FDBFF',
+        alignSelf: 'flex-start',
+        marginTop: 20,
+        paddingVertical: 10,
+        paddingHorizontal: 24,
+        borderRadius: Esquinas.pildora,
+        backgroundColor: colores.acento,
     },
     botonTexto: {
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: 'bold',
-        color: '#0A2540',
+        color: '#FFFFFF',
     },
     botonSecundario: {
-        marginTop: 12,
-        paddingVertical: 14,
-        alignItems: 'center',
-        borderRadius: 999,
+        alignSelf: 'flex-start',
+        paddingVertical: 10,
+        paddingHorizontal: 24,
+        borderRadius: Esquinas.pildora,
         borderWidth: 1,
-        borderColor: '#7FDBFF',
+        borderColor: colores.acento,
     },
     botonSecundarioTexto: {
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: 'bold',
-        color: '#7FDBFF',
+        color: colores.acento,
     },
     estadoReloj: {
-        marginBottom: 4,
-        fontSize: 16,
-        color: '#FFFFFF',
+        marginBottom: 12,
+        fontSize: 15,
+        color: colores.textoSecundario,
     },
 });

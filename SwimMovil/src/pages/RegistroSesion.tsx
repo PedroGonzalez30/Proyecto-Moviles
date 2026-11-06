@@ -1,14 +1,28 @@
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Equipo, Estilo, Serie } from '../types';
+import { Equipo, Estilo, Serie, Sesion } from '../types';
 import { guardarSesion } from '../storage/sesiones';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
-import { colores, Esquinas, sombra } from '../components/temas';
+import { colores, Esquinas } from '../components/temas';
+import Chip from '../components/Chip';
 
 const ESTILOS: Estilo[] = ['crol', 'dorso', 'pecho', 'mariposa', 'combinado'];
 const EQUIPO: Equipo[] = ['aletas', 'paletas', 'pullbuoy', 'tabla', 'snorkel'];
+const DISTANCIAS = ['25', '50', '100', '200', '400', 'Otro'];
+
+// "130" -> 90 segundos; "45" -> 45 segundos
+const aSegundos = (d: string): number | undefined => {
+    if (!d) return undefined;
+    const n = Number(d);
+    const total = Math.floor(n / 100) * 60 + (n % 100);
+    return total > 0 ? total : undefined;
+};
+
+// "130" -> "1:30"; con 1 o 2 dígitos se deja igual
+const formatoTiempo = (d: string) =>
+    d.length <= 2 ? d : `${d.slice(0, -2)}:${d.slice(-2)}`;
 
 type Props = NativeStackScreenProps<RootStackParamList, 'RegistroSesion'>;
 
@@ -18,37 +32,42 @@ export default function RegistroSesion({ navigation }: Props) {
 
     const [repeticiones, setRepeticiones] = useState('');
     const [distancia, setDistancia] = useState('');
+    const [distanciaOtro, setDistanciaOtro] = useState('');
     const [estilo, setEstilo] = useState<Estilo>('crol');
-    const [intervaloSeg, setIntervaloSeg] = useState('');
-    const [descansoSeg, setDescansoSeg] = useState('');
+    const [intervalo, setIntervalo] = useState('');
+    const [descanso, setDescanso] = useState('');
     const [equipo, setEquipo] = useState<Equipo | null>(null);
+    const [mostrarEquipo, setMostrarEquipo] = useState(false);
 
     const agregarEjercicio = () => {
-        if (!repeticiones || !distancia) return;
+        const metros = Number(distancia === 'Otro' ? distanciaOtro : distancia);
+        if (!repeticiones || !metros) return;
 
         const nuevaSerie: Serie = {
             repeticiones: Number(repeticiones),
-            distancia: Number(distancia),
+            distancia: metros,
             estilo,
-            intervaloSeg: intervaloSeg ? Number(intervaloSeg) : undefined,
-            descansoSeg: descansoSeg ? Number(descansoSeg) : undefined,
+            intervaloSeg: aSegundos(intervalo),
+            descansoSeg: aSegundos(descanso),
             equipo: equipo || undefined,
         };
 
         setSeries([...series, nuevaSerie]);
         setRepeticiones('');
         setDistancia('');
-        setIntervaloSeg('');
-        setDescansoSeg('');
+        setDistanciaOtro('');
+        setIntervalo('');
+        setDescanso('');
     };
 
     const handleGuardar = async () => {
         try {
-            const sesion = {
+            const sesion: Sesion = {
                 id: Date.now().toString(),
                 fecha: new Date().toISOString(),
                 duracionMin: Number(duracionMin),
                 series,
+                origen: 'manual',
             };
 
             await guardarSesion(sesion);
@@ -65,105 +84,111 @@ export default function RegistroSesion({ navigation }: Props) {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.scroll}>
-                <Text style={styles.titulo}>Registrar sesión</Text>
+        <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
+            <KeyboardAvoidingView style={styles.container} behavior="padding">
+                <ScrollView contentContainerStyle={styles.scroll}>
+                    <Text style={styles.titulo}>Registrar sesión</Text>
 
-                <Text style={styles.label}>Duración total (min)</Text>
-                <TextInput
-                    style={styles.input}
-                    keyboardType="numeric"
-                    value={duracionMin}
-                    onChangeText={setDuracionMin}
-                    placeholder="Ej. 45"
-                    placeholderTextColor="#7FDBFF"
-                />
+                    <Text style={styles.label}>Duración total (min)</Text>
+                    <TextInput
+                        style={styles.input}
+                        keyboardType="numeric"
+                        value={duracionMin}
+                        onChangeText={setDuracionMin}
+                        placeholder="Ej. 45"
+                        placeholderTextColor={colores.textoSecundario}
+                    />
 
-                <Text style={styles.subtitulo}>Ejercicios</Text>
-                {series.map((s, index) => (
-                    <View key={index} style={styles.card}>
-                        <Text style={styles.cardTexto}>
-                            {s.repeticiones} x {s.distancia}m — {s.estilo}
-                        </Text>
+                    <Text style={styles.subtitulo}>Ejercicios</Text>
+                    {series.map((s, index) => (
+                        <View key={index} style={styles.card}>
+                            <Text style={styles.cardTexto}>
+                                {s.repeticiones} x {s.distancia}m — {s.estilo}
+                            </Text>
+                        </View>
+                    ))}
+
+                    <View style={styles.formEjercicio}>
+                        <Text style={styles.label}>Repeticiones</Text>
+                        <TextInput
+                            style={styles.input}
+                            keyboardType="numeric"
+                            value={repeticiones}
+                            onChangeText={setRepeticiones}
+                            placeholder="Ej. 8"
+                            placeholderTextColor={colores.textoSecundario}
+                        />
+
+                        <Text style={styles.label}>Distancia (m)</Text>
+                        <Chip
+                            opciones={DISTANCIAS}
+                            seleccionados={[distancia]}
+                            onToggle={(o) => setDistancia(o === distancia ? '' : o)}
+                        />
+                        {distancia === 'Otro' && (
+                            <TextInput
+                                style={styles.inputOtro}
+                                keyboardType="numeric"
+                                value={distanciaOtro}
+                                onChangeText={setDistanciaOtro}
+                                placeholder="Ej. 150"
+                                placeholderTextColor={colores.textoSecundario}
+                            />
+                        )}
+
+                        <Text style={styles.label}>Estilo</Text>
+                        <Chip opciones={ESTILOS} seleccionados={[estilo]} onToggle={setEstilo} />
+
+                        <View style={styles.filaTiempos}>
+                            <View style={styles.campoTiempo}>
+                                <Text style={styles.label}>Intervalo</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    keyboardType="numeric"
+                                    maxLength={5}
+                                    value={formatoTiempo(intervalo)}
+                                    onChangeText={(t) => setIntervalo(t.replace(/\D/g, ''))}
+                                    placeholder="Ej. 1:30"
+                                    placeholderTextColor={colores.textoSecundario}
+                                />
+                            </View>
+                            <View style={styles.campoTiempo}>
+                                <Text style={styles.label}>Descanso</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    keyboardType="numeric"
+                                    maxLength={5}
+                                    value={formatoTiempo(descanso)}
+                                    onChangeText={(t) => setDescanso(t.replace(/\D/g, ''))}
+                                    placeholder="Ej. 0:30"
+                                    placeholderTextColor={colores.textoSecundario}
+                                />
+                            </View>
+                        </View>
+
+                        <TouchableOpacity onPress={() => setMostrarEquipo(!mostrarEquipo)}>
+                            <Text style={styles.enlace}>
+                                {mostrarEquipo ? '− Equipo' : '+ Equipo (opcional)'}
+                            </Text>
+                        </TouchableOpacity>
+                        {mostrarEquipo && (
+                            <Chip
+                                opciones={EQUIPO}
+                                seleccionados={equipo ? [equipo] : []}
+                                onToggle={(e) => setEquipo(e === equipo ? null : e)}
+                            />
+                        )}
+
+                        <TouchableOpacity style={styles.boton} onPress={agregarEjercicio}>
+                            <Text style={styles.botonTexto}>+ Agregar ejercicio</Text>
+                        </TouchableOpacity>
                     </View>
-                ))}
 
-                <View style={styles.formEjercicio}>
-                    <Text style={styles.label}>Repeticiones</Text>
-                    <TextInput
-                        style={styles.input}
-                        keyboardType="numeric"
-                        value={repeticiones}
-                        onChangeText={setRepeticiones}
-                        placeholder="Ej. 8"
-                        placeholderTextColor="#7FDBFF"
-                    />
-
-                    <Text style={styles.label}>Distancia (m)</Text>
-                    <TextInput
-                        style={styles.input}
-                        keyboardType="numeric"
-                        value={distancia}
-                        onChangeText={setDistancia}
-                        placeholder="Ej. 50"
-                        placeholderTextColor="#7FDBFF"
-                    />
-
-                    <Text style={styles.label}>Estilo</Text>
-                    <View style={styles.estilosFila}>
-                        {ESTILOS.map((e) => (
-                            <TouchableOpacity
-                                key={e}
-                                style={[styles.estiloChip, estilo === e && styles.estiloChipActivo]}
-                                onPress={() => setEstilo(e)}
-                            >
-                                <Text style={styles.estiloTexto}>{e}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    <Text style={styles.label}>Equipo</Text>
-                    <View style={styles.estilosFila}>
-                        {EQUIPO.map((e) => (
-                            <TouchableOpacity
-                                key={e}
-                                style={[styles.estiloChip, equipo === e && styles.estiloChipActivo]}
-                                onPress={() => setEquipo(e)}
-                            >
-                                <Text style={styles.estiloTexto}>{e}</Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-
-                    <Text style={styles.label}>Intervalo (seg, opcional)</Text>
-                    <TextInput
-                        style={styles.input}
-                        keyboardType="numeric"
-                        value={intervaloSeg}
-                        onChangeText={setIntervaloSeg}
-                        placeholder="Ej. 60"
-                        placeholderTextColor="#7FDBFF"
-                    />
-
-                    <Text style={styles.label}>Descanso (seg, opcional)</Text>
-                    <TextInput
-                        style={styles.input}
-                        keyboardType="numeric"
-                        value={descansoSeg}
-                        onChangeText={setDescansoSeg}
-                        placeholder="Ej. 30"
-                        placeholderTextColor="#7FDBFF"
-                    />
-
-                    <TouchableOpacity style={styles.boton} onPress={agregarEjercicio}>
-                        <Text style={styles.botonTexto}>+ Agregar ejercicio</Text>
+                    <TouchableOpacity style={styles.botonGuardar} onPress={handleGuardar}>
+                        <Text style={styles.botonGuardarTexto}>Guardar sesión</Text>
                     </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity style={styles.botonGuardar} onPress={handleGuardar}>
-                    <Text style={styles.botonTexto}>Guardar sesión</Text>
-                </TouchableOpacity>
-            </ScrollView>
+                </ScrollView>
+            </KeyboardAvoidingView>
         </SafeAreaView>
     );
 }
@@ -190,18 +215,40 @@ const styles = StyleSheet.create({
         color: colores.texto,
     },
     label: {
-        marginTop: 8,
-        marginBottom: 4,
+        marginTop: 12,
+        marginBottom: 6,
         fontSize: 14,
         color: colores.textoSecundario,
     },
     input: {
         padding: 10,
         borderRadius: Esquinas.tarjeta,
-        backgroundColor: colores.tarjeta,
-        color: colores.texto,
         borderWidth: 1,
         borderColor: colores.borde,
+        backgroundColor: colores.tarjeta,
+        color: colores.texto,
+    },
+    inputOtro: {
+        marginTop: 8,
+        padding: 10,
+        borderRadius: Esquinas.tarjeta,
+        borderWidth: 1,
+        borderColor: colores.borde,
+        backgroundColor: colores.tarjeta,
+        color: colores.texto,
+    },
+    filaTiempos: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    campoTiempo: {
+        flex: 1,
+    },
+    enlace: {
+        marginVertical: 12,
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: colores.acento,
     },
     card: {
         marginBottom: 8,
@@ -214,58 +261,39 @@ const styles = StyleSheet.create({
     cardTexto: {
         fontSize: 14,
         color: colores.texto,
-        borderWidth: 1,
-        borderColor: colores.borde,
     },
     formEjercicio: {
         marginTop: 16,
         padding: 12,
         borderRadius: Esquinas.tarjeta,
+        borderWidth: 1,
+        borderColor: colores.borde,
         backgroundColor: colores.tarjeta,
-        borderWidth: 1,
-        borderColor: colores.acento,
-    },
-    estilosFila: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    estiloChip: {
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: Esquinas.pildora,
-        backgroundColor: colores.tarjeta,
-        borderWidth: 1,
-        borderColor: colores.acento,
-    },
-    estiloChipActivo: {
-        backgroundColor: colores.acento,
-        borderWidth: 1,
-        borderColor: colores.acento,
-    },
-    estiloTexto: {
-        fontSize: 13,
-        color: colores.texto,
     },
     boton: {
         marginTop: 16,
         padding: 12,
-        borderRadius: Esquinas.tarjeta,
-        backgroundColor: colores.tarjeta,
+        alignItems: 'center',
+        borderRadius: Esquinas.pildora,
         borderWidth: 1,
         borderColor: colores.acento,
-        alignItems: 'center',
+        backgroundColor: colores.tarjeta,
     },
     botonGuardar: {
         marginTop: 24,
         padding: 14,
+        alignItems: 'center',
         borderRadius: Esquinas.pildora,
         backgroundColor: colores.acento,
-        alignItems: 'center',
     },
     botonTexto: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: colores.texto,
+        color: colores.acento,
+    },
+    botonGuardarTexto: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
     },
 });

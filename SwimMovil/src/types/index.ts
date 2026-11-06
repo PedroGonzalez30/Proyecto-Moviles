@@ -32,6 +32,7 @@ export type Sesion = {
   duracionMin: number;
   series: Serie[];
   rutinaId?: string;
+  origen?: 'manual' | 'reloj';
 };
 
 export type Usuario = {
@@ -49,3 +50,4 @@ export type Perfil = {
   estilos: Estilo[];
   equipo: Equipo[];
 };
+
